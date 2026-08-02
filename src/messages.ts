@@ -21,6 +21,13 @@ type MessagesBase = {
     "background:/updateConnectionDetails": {
         details: ConnectionDetails;
     };
+    "background:/getFilteredServers": {
+        servers: Array<{ country_code: string }>;
+    };
+    "background:/getProxyRulesConfig": {};
+    "popup:/proxyRulesConfig": {
+        proxyRulesConfig: any;
+    };
 };
 
 interface MessageBase<K extends keyof MessagesBase> {

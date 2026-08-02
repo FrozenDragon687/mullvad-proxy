@@ -230,3 +230,42 @@
         "description": "Label for button that clears API cache"
     }
 }
+
+    "optionsEnableLocationExclusionLabel": {
+        "message": "Enable location exclusion",
+        "description": "Enable location exclusion option label."
+    },
+    "optionsExcludedLocationsLabel": {
+        "message": "Excluded locations",
+        "description": "Excluded locations option label."
+    },
+    "optionsExcludedLocationsDescription": {
+        "message": "List of country codes to exclude from proxy selection (e.g., us, gb, de). One per line.",
+        "description": "Excluded locations option description."
+    },
+
+    "optionsEnableSiteRulesLabel": {
+        "message": "Enable per-site proxy rules",
+        "description": "Enable per-site proxy rules option label."
+    },
+    "optionsSiteRulesLabel": {
+        "message": "Site proxy rules",
+        "description": "Site proxy rules option label."
+    },
+    "optionsSiteRulesDescription": {
+        "message": "Assign specific proxies to specific sites. Format: site-pattern=proxy-host (e.g., example.com=se1-wg.socks5.mullvad.net). One per line.",
+        "description": "Site proxy rules option description."
+    },
+
+    "optionsEnableContainerSiteRulesLabel": {
+        "message": "Enable per-container site rules",
+        "description": "Enable per-container site rules option label."
+    },
+    "optionsContainerSiteRulesLabel": {
+        "message": "Container site proxy rules",
+        "description": "Container site proxy rules option label."
+    },
+    "optionsContainerSiteRulesDescription": {
+        "message": "Assign specific proxies to sites in specific containers. Format: container-id:site-pattern=proxy-host (e.g., personal:example.com=se1-wg.socks5.mullvad.net). One per line.",
+        "description": "Container site proxy rules option description."
+    }

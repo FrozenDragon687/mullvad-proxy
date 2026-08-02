@@ -8,6 +8,12 @@ import * as mullvadApi from "./lib/mullvadApi";
 
 import localStorage from "./localStorage";
 import messages from "./messages";
+import {
+    ProxyRulesConfig,
+    getProxyForRequest,
+    filterServersByExcludedLocations,
+    isLocationExcluded
+} from "./types/proxyRules";
 
 const _ = browser.i18n.getMessage;
 
@@ -103,6 +109,13 @@ let proxyAbortController = new AbortController();
 
 let excludeList: string[] = [];
 
+// Advanced proxy selection state
+let proxyRulesConfig: ProxyRulesConfig = {
+    excludedLocations: [],
+    siteRules: [],
+    containerSiteRules: []
+};
+
 options.addEventListener("changed", async ev => {
     if (
         ev.detail.includes("enableExcludeList") ||
@@ -117,10 +130,48 @@ options.addEventListener("changed", async ev => {
 
         excludeList = [];
     }
+
+    // Update proxy rules configuration when related options change
+    if (
+        ev.detail.includes("enableLocationExclusion") ||
+        ev.detail.includes("excludedLocations") ||
+        ev.detail.includes("enableSiteRules") ||
+        ev.detail.includes("siteProxyRules") ||
+        ev.detail.includes("enableContainerSiteRules") ||
+        ev.detail.includes("containerSiteProxyRules")
+    ) {
+        await updateProxyRulesConfig();
+    }
 });
 
+/**
+ * Update the proxy rules configuration from options
+ */
+async function updateProxyRulesConfig(): Promise<void> {
+    const opts = await options.getAll();
+
+    proxyRulesConfig = {
+        excludedLocations: opts.enableLocationExclusion
+            ? opts.excludedLocations
+            : [],
+        siteRules: opts.enableSiteRules
+            ? opts.siteProxyRules.map(rule => ({
+                  sitePattern: rule.sitePattern,
+                  proxyHost: rule.proxyHost
+              }))
+            : [],
+        containerSiteRules: opts.enableContainerSiteRules
+            ? opts.containerSiteProxyRules.map(rule => ({
+                  sitePattern: rule.sitePattern,
+                  proxyHost: rule.proxyHost,
+                  containerId: rule.containerId
+              }))
+            : []
+    };
+}
+
 function onProxyRequest(details: browser.proxy._OnRequestDetails) {
-    // Check patterns against request URLs
+    // Check patterns against request URLs for exclude list
     for (const host of excludeList) {
         if (new URL(details.url).host === host) {
             return;
@@ -131,6 +182,31 @@ function onProxyRequest(details: browser.proxy._OnRequestDetails) {
         ) {
             return;
         }
+    }
+
+    // If no proxy is set, return null
+    if (!proxy) {
+        return null;
+    }
+
+    // Get container ID if available (Firefox containers)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const containerId = (details as any).cookieStoreId || (details as any).contextId;
+
+    // Check if this request should use a different proxy based on rules
+    const ruleProxyHost = getProxyForRequest(
+        details.url,
+        containerId,
+        proxyRulesConfig,
+        proxy.host
+    );
+
+    // If a rule specifies a different proxy, use it
+    if (ruleProxyHost && ruleProxyHost !== proxy.host) {
+        return {
+            ...proxy,
+            host: ruleProxyHost
+        };
     }
 
     return proxy;
@@ -356,6 +432,16 @@ messages.onConnect.addListener(port => {
                 );
                 break;
             }
+
+            case "background:/getProxyRulesConfig": {
+                port.postMessage({
+                    subject: "popup:/proxyRulesConfig",
+                    data: {
+                        proxyRulesConfig
+                    }
+                });
+                break;
+            }
         }
     });
 
@@ -363,6 +449,20 @@ messages.onConnect.addListener(port => {
 });
 
 let isInitialized = false;
+
+/**
+ * Filter servers based on excluded locations from proxy rules
+ * This ensures excluded locations are never selectable
+ */
+function filterAvailableServers(servers: mullvadApi.Server[]): mullvadApi.Server[] {
+    if (proxyRulesConfig.excludedLocations.length === 0) {
+        return servers;
+    }
+
+    return servers.filter(
+        server => !isLocationExcluded(server.country_code, proxyRulesConfig.excludedLocations)
+    );
+}
 
 async function init() {
     if (isInitialized) {
@@ -380,6 +480,9 @@ async function init() {
     if (opts.enableExcludeList) {
         excludeList = opts.excludeList;
     }
+
+    // Initialize proxy rules configuration
+    await updateProxyRulesConfig();
 
     const browserType = await utils.getBrowserType();
     switch (browserType) {

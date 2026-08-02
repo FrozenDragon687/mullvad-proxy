@@ -1,5 +1,7 @@
 "use strict";
 
+import { ProxyRulesConfig, defaultProxyRules } from "./types/proxyRules";
+
 export interface Options {
     autoConnect: boolean;
     rememberConnectedServer: boolean;
@@ -11,6 +13,20 @@ export interface Options {
     enableExcludeList: boolean;
     excludeList: string[];
     enableQuickConnect: boolean;
+    // New advanced proxy selection features
+    enableLocationExclusion: boolean;
+    excludedLocations: string[];
+    enableSiteRules: boolean;
+    siteProxyRules: Array<{
+        sitePattern: string;
+        proxyHost: string;
+    }>;
+    enableContainerSiteRules: boolean;
+    containerSiteProxyRules: Array<{
+        sitePattern: string;
+        proxyHost: string;
+        containerId: string;
+    }>;
 }
 
 export default {
@@ -23,5 +39,12 @@ export default {
     enableDebugInfo: false,
     enableExcludeList: false,
     excludeList: [],
-    enableQuickConnect: true
+    enableQuickConnect: true,
+    // New advanced proxy selection features - disabled by default for backward compatibility
+    enableLocationExclusion: false,
+    excludedLocations: [],
+    enableSiteRules: false,
+    siteProxyRules: [],
+    enableContainerSiteRules: false,
+    containerSiteProxyRules: []
 } as Options;
