@@ -75,6 +75,78 @@ export const OptionsView = () => {
         [optionsValues]
     );
 
+    const handleExcludedLocationsChange = useCallback(
+        (ev: React.ChangeEvent<HTMLTextAreaElement>) => {
+            if (optionsValues) {
+                const newOptionsValues = { ...optionsValues };
+                if (ev.target.value === "") {
+                    newOptionsValues.excludedLocations = [];
+                } else {
+                    newOptionsValues.excludedLocations = ev.target.value
+                        .split("\n")
+                        .map(loc => loc.trim().toLowerCase())
+                        .filter(loc => loc.length === 2); // Validate country codes
+                }
+                options.setAll(newOptionsValues);
+            }
+        },
+        [optionsValues]
+    );
+
+    const handleSiteRulesChange = useCallback(
+        (ev: React.ChangeEvent<HTMLTextAreaElement>) => {
+            if (optionsValues) {
+                const newOptionsValues = { ...optionsValues };
+                if (ev.target.value === "") {
+                    newOptionsValues.siteProxyRules = [];
+                } else {
+                    newOptionsValues.siteProxyRules = ev.target.value
+                        .split("\n")
+                        .filter(line => line.trim().length > 0)
+                        .map(line => {
+                            const parts = line.split("=");
+                            return {
+                                sitePattern: parts[0]?.trim() || "",
+                                proxyHost: parts[1]?.trim() || ""
+                            };
+                        })
+                        .filter(rule => rule.sitePattern && rule.proxyHost);
+                }
+                options.setAll(newOptionsValues);
+            }
+        },
+        [optionsValues]
+    );
+
+    const handleContainerSiteRulesChange = useCallback(
+        (ev: React.ChangeEvent<HTMLTextAreaElement>) => {
+            if (optionsValues) {
+                const newOptionsValues = { ...optionsValues };
+                if (ev.target.value === "") {
+                    newOptionsValues.containerSiteProxyRules = [];
+                } else {
+                    newOptionsValues.containerSiteProxyRules = ev.target.value
+                        .split("\n")
+                        .filter(line => line.trim().length > 0)
+                        .map(line => {
+                            const parts = line.split(":");
+                            const containerPart = parts[0]?.trim() || "";
+                            const rulePart = parts.slice(1).join(":");
+                            const ruleParts = rulePart.split("=");
+                            return {
+                                containerId: containerPart,
+                                sitePattern: ruleParts[0]?.trim() || "",
+                                proxyHost: ruleParts[1]?.trim() || ""
+                            };
+                        })
+                        .filter(rule => rule.containerId && rule.sitePattern && rule.proxyHost);
+                }
+                options.setAll(newOptionsValues);
+            }
+        },
+        [optionsValues]
+    );
+
     return (
         <form className="options">
             {optionsValues && (
@@ -222,6 +294,122 @@ export const OptionsView = () => {
                         <div className="option__description">
                             {_("optionsEnableDebugInfoDescription")}
                         </div>
+                    </label>
+
+                    {/* Advanced Proxy Selection Features */}
+                    <hr />
+
+                    <label className="option option--inline">
+                        <div className="option__control">
+                            <input
+                                name="enableLocationExclusion"
+                                type="checkbox"
+                                checked={optionsValues?.enableLocationExclusion}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                        <div className="option__label">
+                            {_("optionsEnableLocationExclusionLabel")}
+                        </div>
+                        <div className="option__description">
+                            Exclude specific countries from proxy selection
+                        </div>
+
+                        <label className="option">
+                            <div className="option__label">
+                                {_("optionsExcludedLocationsLabel")}
+                            </div>
+                            <div className="option__description">
+                                {_("optionsExcludedLocationsDescription")}
+                            </div>
+                            <div className="option__control">
+                                <textarea
+                                    name="excludedLocations"
+                                    onChange={handleExcludedLocationsChange}
+                                    value={optionsValues.excludedLocations.join("\n")}
+                                    rows={4}
+                                    placeholder="us&#10;gb&#10;de"
+                                ></textarea>
+                            </div>
+                        </label>
+                    </label>
+
+                    <hr />
+
+                    <label className="option option--inline">
+                        <div className="option__control">
+                            <input
+                                name="enableSiteRules"
+                                type="checkbox"
+                                checked={optionsValues?.enableSiteRules}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                        <div className="option__label">
+                            {_("optionsEnableSiteRulesLabel")}
+                        </div>
+                        <div className="option__description">
+                            Assign specific proxies to specific sites
+                        </div>
+
+                        <label className="option">
+                            <div className="option__label">
+                                {_("optionsSiteRulesLabel")}
+                            </div>
+                            <div className="option__description">
+                                {_("optionsSiteRulesDescription")}
+                            </div>
+                            <div className="option__control">
+                                <textarea
+                                    name="siteProxyRules"
+                                    onChange={handleSiteRulesChange}
+                                    value={optionsValues.siteProxyRules
+                                        .map(rule => `${rule.sitePattern}=${rule.proxyHost}`)
+                                        .join("\n")}
+                                    rows={4}
+                                    placeholder="example.com=se1-wg.socks5.mullvad.net&#10;*.google.com=de1-wg.socks5.mullvad.net"
+                                ></textarea>
+                            </div>
+                        </label>
+                    </label>
+
+                    <hr />
+
+                    <label className="option option--inline">
+                        <div className="option__control">
+                            <input
+                                name="enableContainerSiteRules"
+                                type="checkbox"
+                                checked={optionsValues?.enableContainerSiteRules}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                        <div className="option__label">
+                            {_("optionsEnableContainerSiteRulesLabel")}
+                        </div>
+                        <div className="option__description">
+                            Assign different proxies to the same site in different containers
+                        </div>
+
+                        <label className="option">
+                            <div className="option__label">
+                                {_("optionsContainerSiteRulesLabel")}
+                            </div>
+                            <div className="option__description">
+                                {_("optionsContainerSiteRulesDescription")}
+                            </div>
+                            <div className="option__control">
+                                <textarea
+                                    name="containerSiteProxyRules"
+                                    onChange={handleContainerSiteRulesChange}
+                                    value={optionsValues.containerSiteProxyRules
+                                        .map(rule => `${rule.containerId}:${rule.sitePattern}=${rule.proxyHost}`)
+                                        .join("\n")}
+                                    rows={4}
+                                    placeholder="personal:example.com=se1-wg.socks5.mullvad.net&#10;work:example.com=de1-wg.socks5.mullvad.net"
+                                ></textarea>
+                            </div>
+                        </label>
                     </label>
 
                     {browserType === utils.BrowserType.Firefox && (
