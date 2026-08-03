@@ -18,6 +18,7 @@ import options, { Options } from "../../lib/options";
 
 import * as mullvadApi from "../../lib/mullvadApi";
 import { getMinutesInMs } from "../../lib/utils";
+import { filterServersByExcludedLocations, ProxyRulesConfig } from "../../types/proxyRules";
 
 import { OptionsPanel } from "./OptionsPanel";
 import LoadingIndicator from "../LoadingIndicator";
@@ -69,10 +70,19 @@ const PopupApp = () => {
     );
 
     const [opts, setOpts] = useState<Options>();
+    const [proxyRulesConfig, setProxyRulesConfig] = useState<ProxyRulesConfig>();
+    
     useEffect(() => {
         options.getAll().then(setOpts);
         options.addEventListener("changed", () => {
             options.getAll().then(setOpts);
+        });
+    }, []);
+    
+    useEffect(() => {
+        // Fetch proxy rules config from background
+        port.postMessage({
+            subject: "background:/getProxyRulesConfig"
         });
     }, []);
 
@@ -166,6 +176,12 @@ const PopupApp = () => {
                         return newProxyState;
                     });
                     break;
+                case "popup:/proxyRulesConfig":
+                    // Type guard to ensure message.data has proxyRulesConfig
+                    if ("proxyRulesConfig" in message.data) {
+                        setProxyRulesConfig(message.data.proxyRulesConfig);
+                    }
+                    break;
             }
         }
 
@@ -173,6 +189,9 @@ const PopupApp = () => {
         port.onMessage.addListener(handleBackgroundMessage);
 
         (async () => {
+            // Use proxy rules config from state (will be updated via message handler)
+            const proxyRules = proxyRulesConfig || { excludedLocations: [], siteRules: [], containerSiteRules: [] };
+
             let { serverList, serverListFrom } = await localStorage.get([
                 "serverList",
                 "serverListFrom"
@@ -192,7 +211,12 @@ const PopupApp = () => {
                 });
             }
 
-            for (const server of serverList) {
+            // Filter servers based on excluded locations
+            const filteredServerList = proxyRules.excludedLocations.length > 0
+                ? filterServersByExcludedLocations(serverList, proxyRules.excludedLocations)
+                : serverList;
+
+            for (const server of filteredServerList) {
                 const countryServers =
                     serverMap.current.get(server.country_code) ?? [];
 
@@ -222,7 +246,17 @@ const PopupApp = () => {
             }
 
             const { recentServers } = await localStorage.get("recentServers");
-            recentServers?.forEach((server, i) => {
+            
+            // Filter recent servers based on excluded locations
+            const filteredRecentServers = proxyRules.excludedLocations.length > 0 && recentServers
+                ? recentServers.filter(server => 
+                    !proxyRules.excludedLocations.some(excluded => 
+                        excluded.toLowerCase() === server.country_code.toLowerCase()
+                    )
+                )
+                : recentServers;
+            
+            filteredRecentServers?.forEach((server, i) => {
                 const siblingServers = serverMap.current.get(
                     server.country_code
                 );
@@ -235,13 +269,13 @@ const PopupApp = () => {
                  * with newer info.
                  */
                 if (!matchingServer) {
-                    recentServers.splice(i, 1);
+                    filteredRecentServers.splice(i, 1);
                 } else {
-                    recentServers.splice(i, 1, matchingServer);
+                    filteredRecentServers.splice(i, 1, matchingServer);
                 }
             });
 
-            setRecentServers(recentServers);
+            setRecentServers(filteredRecentServers);
             setIsLoading(false);
         })();
 

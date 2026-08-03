@@ -3,6 +3,7 @@
 import Messenger from "./lib/Messenger";
 import { ConnectionDetails } from "./lib/mullvadApi";
 import { TypedPort } from "./lib/TypedPort";
+import { ProxyRulesConfig } from "./types/proxyRules";
 
 export interface ProxyState {
     isConnected?: boolean;
@@ -26,7 +27,7 @@ type MessagesBase = {
     };
     "background:/getProxyRulesConfig": {};
     "popup:/proxyRulesConfig": {
-        proxyRulesConfig: any;
+        proxyRulesConfig: ProxyRulesConfig;
     };
 };
 

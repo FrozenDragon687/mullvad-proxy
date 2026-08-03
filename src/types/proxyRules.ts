@@ -172,10 +172,10 @@ export function getProxyForRequest(
  * Filter servers based on excluded locations
  * Returns servers that are NOT in excluded locations
  */
-export function filterServersByExcludedLocations(
-    servers: Array<{ country_code: string }>,
+export function filterServersByExcludedLocations<T extends { country_code: string }>(
+    servers: T[],
     excludedLocations: string[]
-): Array<{ country_code: string }> {
+): T[] {
     if (excludedLocations.length === 0) {
         return servers;
     }

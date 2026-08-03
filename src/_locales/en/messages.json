@@ -228,8 +228,7 @@
     "optionsClearRecentServersLabel": {
         "message": "Clear recent servers",
         "description": "Label for button that clears API cache"
-    }
-}
+    },
 
     "optionsEnableLocationExclusionLabel": {
         "message": "Enable location exclusion",
@@ -269,3 +268,4 @@
         "message": "Assign specific proxies to sites in specific containers. Format: container-id:site-pattern=proxy-host (e.g., personal:example.com=se1-wg.socks5.mullvad.net). One per line.",
         "description": "Container site proxy rules option description."
     }
+}
